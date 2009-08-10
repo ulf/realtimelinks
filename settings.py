@@ -77,6 +77,7 @@ INSTALLED_APPS = (
     'django.contrib.sessions',
     'django.contrib.sites',
     'realtimelinks.twitlinks',
+    'django.contrib.admin',
 )
 
 # Use a localsettings.py file to overwrite any of the config variables
