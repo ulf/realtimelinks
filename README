@@ -1,0 +1,6 @@
+RealTimeLinks
+-------------
+
+This project is built to retrieve links in realtime as they are submitted through social media services like twitter.
+
+I started the project as a plain python script and used Whoosh as a searchengine. but will now start to port it into Django.
