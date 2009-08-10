@@ -11,6 +11,7 @@ import threading
 import Queue
 import datetime
 from realtimelinks.twitlinks.models import Link
+import django
 
 class CycleException(Exception):
     pass
@@ -43,10 +44,9 @@ def resolv(url, urls = []):
 
 class Resolver(threading.Thread):
 
-    def __init__(self, workQ, lock, counter, i):
+    def __init__(self, workQ, counter, i):
         self.workQ = workQ
         self.i = i
-        self.lock = lock
         self.counter = counter
         self.working = 0
         threading.Thread.__init__(self)
@@ -66,15 +66,14 @@ class Resolver(threading.Thread):
             r = resolv(url,[])
             if r and url and r[0] != url:
                 title, description, keywords = getUrlInfo(r[0])
-                with self.lock:
-                    save(url, r[0], title, description, keywords)
-                    self.counter += 1
+                save(url, r[0], title, description, keywords)
+                self.counter += 1
         except Exception as err:
             print err
 
 def save(url, longUrl, title, description, keywords):
     existing = Link.objects.filter(long_url = longUrl)
-    if existing not None:
+    if existing:
         existing[0].markSeen()
         print 'updating', existing[0]
     else:
@@ -85,7 +84,8 @@ def save(url, longUrl, title, description, keywords):
                  keywords = keywords)
         l.save()
         print 'saving', l
-
+    django.db.connection.close()
+    
 def getUrlInfo(url):
     html = urllib.urlopen(url).read()
     try:
@@ -150,9 +150,8 @@ def main():
     print 'started fetchers'
 
     workers = []
-    l = threading.Lock()
     for i in range(300):
-        worker = Resolver(q, l, counter, i)
+        worker = Resolver(q, counter, i)
         #worker.daemon = True
         worker.start()
         workers.append(worker)
