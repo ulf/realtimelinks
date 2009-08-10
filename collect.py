@@ -10,6 +10,7 @@ import cProfile
 import threading
 import Queue
 import datetime
+from realtimelinks.twitlinks.models import Link
 
 class CycleException(Exception):
     pass
@@ -72,7 +73,18 @@ class Resolver(threading.Thread):
             print err
 
 def save(url, longUrl, title, description, keywords):
-    pass
+    existing = Link.objects.filter(long_url = longUrl)
+    if existing not None:
+        existing[0].markSeen()
+        print 'updating', existing[0]
+    else:
+        l = Link(short_url = url,
+                 long_url = longUrl,
+                 title = title,
+                 description = description,
+                 keywords = keywords)
+        l.save()
+        print 'saving', l
 
 def getUrlInfo(url):
     html = urllib.urlopen(url).read()
