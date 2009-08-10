@@ -9,9 +9,9 @@ class Link(models.Model):
     first_seen = models.DateTimeField(default = datetime.datetime.now())
     last_seen = models.DateTimeField(default = datetime.datetime.now())
     occurrences = models.PositiveIntegerField(default = 1)
-    title = models.TextField(blank = True)
-    description = models.TextField(blank = True)
-    keywords = models.TextField(blank = True)
+    title = models.TextField(blank = True, null = True)
+    description = models.TextField(blank = True, null = True)
+    keywords = models.TextField(blank = True, null = True)
 
     def markSeen(self):
         self.last_seen = datetime.datetime.now()
