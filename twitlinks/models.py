@@ -17,3 +17,6 @@ class Link(models.Model):
         self.last_seen = datetime.datetime.now()
         self.occurrences += 1
         self.save()
+
+    def __unicode__(self):
+        return self.long_url
