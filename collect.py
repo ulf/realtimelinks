@@ -2,7 +2,6 @@ import sys, os
 import httplib
 import urllib, urllib2
 import urlparse
-from twitter import Api
 import re
 import time
 import random
@@ -11,15 +10,6 @@ import cProfile
 import threading
 import Queue
 import datetime
-import os, os.path
-from whoosh.filedb.filestore import FileStorage
-from whoosh import store, fields, index
-
-SCHEMA = fields.Schema(shortUrl=fields.ID(stored=True, unique=True),
-                       longUrl=fields.TEXT(stored=True),
-                       title=fields.TEXT(stored=True),
-                       keywords=fields.TEXT(stored=True),
-                       description=fields.TEXT(stored=True))
 
 class CycleException(Exception):
     pass
@@ -49,8 +39,6 @@ def resolv(url, urls = []):
         raise CycleException
     except:
         pass
-
-proxies = [s.strip() for s in open('proxies.txt', 'r').readlines()]
 
 class Resolver(threading.Thread):
 
@@ -84,18 +72,8 @@ class Resolver(threading.Thread):
             print err
 
 def save(url, longUrl, title, description, keywords):
-    w = idx.writer()
-    try:
-        w.add_document(shortUrl=unicode(url),
-                       longUrl=unicode(longUrl),
-                       title=unicode(title),
-                       description=unicode(description),
-                       keywords=unicode(keywords))
-        w.commit()
-        print "added entry", url
-    except Exception:
-        w.cancel()
-    
+    pass
+
 def getUrlInfo(url):
     html = urllib.urlopen(url).read()
     try:
@@ -179,11 +157,5 @@ def main():
         
 
 if __name__ == '__main__':
-    if not os.path.exists('index'):
-        print "creating index"
-        os.mkdir('index')
-        index.create_in('index', SCHEMA)
-    print "loading index"
-    idx = index.open_dir('index')
     main()
 
