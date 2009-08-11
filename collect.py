@@ -10,7 +10,7 @@ import cProfile
 import threading
 import Queue
 import datetime
-from realtimelinks.twitlinks.models import Link
+from realtimelinks.twitlinks.models import Link, Hit
 import django
 
 class CycleException(Exception):
@@ -79,10 +79,15 @@ def save(url, longUrl, title, description, keywords):
     else:
         l = Link(short_url = url,
                  long_url = longUrl,
+                 first_seen = datetime.datetime.now(),
                  title = title,
                  description = description,
                  keywords = keywords)
         l.save()
+        h = Hit()
+        h.link = l
+        h.at = datetime.datetime.now()
+        h.save()
         print 'saving', l
     django.db.connection.close()
     
@@ -120,15 +125,17 @@ class Fetcher(threading.Thread):
 #                html = urllib.urlopen('http://twitter.com/statuses/public_timeline.rss', proxies={ 'http' : 'http://'+proxies[random.randint(0,len(proxies)-1)] }).read()
                 html = urllib.urlopen('http://twitter.com/statuses/public_timeline.rss', proxies={ 'http' : 'http://127.0.0.1:8118' }).read()
                 s = BeautifulSoup(html)
-                texts = s.findAll('description')
-                tweets = [t.contents[0].string for t in texts][1:]
+                texts = s.findAll('item')
+                tweets = [(t.description.string, t.guid.string) for t in texts]
                 for t in tweets:
                     u = re.compile('http://\S+\s*')
-                    m = u.findall(t)
+                    m = u.findall(t[0])
+                    v = re.compile('^http://twitter.com/[^/]+/statuses/(\d+)$')
+                    tid = v.findall(t[1])[0]
                     if m != []:
                         url = m[0]
-                        if url not in self.seen:
-                            self.seen[url] = 1
+                        if tid not in self.seen:
+                            self.seen[tid] = int(time.time())
                             self.workQ.put(url)
                 self.error = 0
                 time.sleep(5)
@@ -159,13 +166,15 @@ def main():
     q.join()
     while True:
         print datetime.datetime.now()
-        print 'Q: ', q.qsize(), 'Retrieved: ', sum([x.counter for x in workers])
+        print 'Q: ', q.qsize(), 'Retrieved: ', sum([x.counter for x in workers]), 'Blocked: ', len(seen)
         err = sum([f.error for f in fetchers])
         w = sum([f.working for f in workers])
         print err, 'erroneous', len(fetchers)-err, 'ok // ', w, 'working', len(workers)-w, 'idle\n'
         time.sleep(15)
-
-        
+        x = int(time.time())
+        for (s,last) in seen.copy().iteritems():
+            if x - last > 30:
+                seen.pop(s)        
 
 if __name__ == '__main__':
     main()
